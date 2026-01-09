@@ -1,0 +1,27 @@
+# -------------------------
+# Python
+# -------------------------
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# -------------------------
+# Node / Playwright
+# -------------------------
+node_modules/
+playwright-report/
+test-results/
+allure-results/
+
+# -------------------------
+# OS / Editor
+# -------------------------
+.DS_Store
+Thumbs.db
+.vscode/
+
+# -------------------------
+# Logs / Temp
+# -------------------------
+*.log

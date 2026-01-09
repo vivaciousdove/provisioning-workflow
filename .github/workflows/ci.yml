@@ -1,0 +1,148 @@
+name: CI - Provisioning Workflow (Playwright + FastAPI + MySQL)
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: provisioning_lab
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Python deps
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install fastapi uvicorn[standard] mysql-connector-python
+
+      - name: Install Node deps
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Create MySQL table (schema)
+        env:
+          MYSQL_PWD: root
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -u root -e "
+          CREATE DATABASE IF NOT EXISTS provisioning_lab;
+          USE provisioning_lab;
+          CREATE TABLE IF NOT EXISTS provisioning_requests (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            customer_id VARCHAR(32) NOT NULL,
+            service_type VARCHAR(32) NOT NULL,
+            plan_code VARCHAR(32) NOT NULL,
+            imei VARCHAR(20) NOT NULL,
+            status VARCHAR(20) NOT NULL DEFAULT 'RECEIVED',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          );
+          "
+
+      - name: Start FastAPI (background)
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: "3306"
+          DB_USER: root
+          DB_PASSWORD: root
+          DB_NAME: provisioning_lab
+        run: |
+          nohup python -m uvicorn api:app --host 127.0.0.1 --port 8000 --log-level info > api.log 2>&1 &
+          echo "Started API"
+
+      - name: Start Web server (background)
+        run: |
+          nohup python -m http.server 5173 --directory web --bind 127.0.0.1 > web.log 2>&1 &
+          echo "Started Web"
+
+      - name: Wait for services
+        run: |
+          echo "Waiting for API..."
+          for i in {1..60}; do
+            if curl -fsS http://127.0.0.1:8000/health >/dev/null; then echo "API up"; break; fi
+            sleep 1
+          done
+          echo "Waiting for Web..."
+          for i in {1..60}; do
+            if curl -fsS http://127.0.0.1:5173/ >/dev/null; then echo "Web up"; break; fi
+            sleep 1
+          done
+
+      - name: Run Playwright tests
+        env:
+          BASE_URL: http://127.0.0.1:5173
+          API_BASE_URL: http://127.0.0.1:8000
+        run: |
+          npx playwright test --project=chromium
+
+      - name: Upload Playwright HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-html-report
+          path: playwright-report
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload test results (screenshots/videos/traces)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: test-results
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload Allure results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results
+          path: allure-results
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload server logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-logs
+          path: |
+            api.log
+            web.log
+          if-no-files-found: warn
+          retention-days: 14

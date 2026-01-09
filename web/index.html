@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Provisioning Lab</title>
+  <style>
+    body { font-family: system-ui, Arial; max-width: 780px; margin: 40px auto; padding: 0 16px; }
+    .row { display: grid; grid-template-columns: 180px 1fr; gap: 10px; margin: 10px 0; align-items: center; }
+    input, select { padding: 10px; font-size: 14px; }
+    button { padding: 10px 14px; font-size: 14px; cursor: pointer; }
+    .card { border: 1px solid #ddd; border-radius: 10px; padding: 16px; }
+    .ok { color: #0a7a0a; }
+    .bad { color: #b00020; }
+    code { background: #f6f6f6; padding: 2px 6px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <h1>Provisioning Lab</h1>
+  <p>Submits to <code>POST /provision</code> on <code>http://127.0.0.1:8000</code></p>
+
+  <div class="card">
+    <div class="row">
+      <label for="customer_id">customer_id</label>
+      <input id="customer_id" name="customer_id" maxlength="32" required value="CUST_UI_001" />
+    </div>
+
+    <div class="row">
+      <label for="service_type">service_type</label>
+      <select id="service_type" name="service_type" required>
+        <option value="WIRELESS" selected>WIRELESS</option>
+        <option value="FIBER">FIBER</option>
+        <option value="IOT">IOT</option>
+      </select>
+    </div>
+
+    <div class="row">
+      <label for="plan_code">plan_code</label>
+      <input id="plan_code" name="plan_code" maxlength="32" required value="PLAN_BASIC" />
+    </div>
+
+    <div class="row">
+      <label for="imei">imei</label>
+      <input id="imei" name="imei" maxlength="20" required value="356938035643810" />
+    </div>
+
+    <div class="row" style="grid-template-columns: 1fr;">
+      <button id="submitBtn" type="button">Submit Provision Request</button>
+    </div>
+
+    <p id="status" aria-live="polite"></p>
+    <pre id="result" style="white-space: pre-wrap;"></pre>
+  </div>
+
+  <script>
+    const API_BASE = "http://127.0.0.1:8000";
+
+    const statusEl = document.getElementById("status");
+    const resultEl = document.getElementById("result");
+    const btn = document.getElementById("submitBtn");
+
+    function setStatus(msg, ok=true) {
+      statusEl.className = ok ? "ok" : "bad";
+      statusEl.textContent = msg;
+    }
+
+    btn.addEventListener("click", async () => {
+      resultEl.textContent = "";
+      setStatus("Submitting...", true);
+
+      const payload = {
+        customer_id: document.getElementById("customer_id").value.trim(),
+        service_type: document.getElementById("service_type").value.trim(),
+        plan_code: document.getElementById("plan_code").value.trim(),
+        imei: document.getElementById("imei").value.trim(),
+      };
+
+      try {
+        const res = await fetch(`${API_BASE}/provision`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        const text = await res.text();
+        let data;
+        try { data = JSON.parse(text); } catch { data = { raw: text }; }
+
+        if (!res.ok) {
+          setStatus(`Error: ${res.status}`, false);
+          resultEl.textContent = JSON.stringify(data, null, 2);
+          return;
+        }
+
+        setStatus(`Accepted: ${res.status} (created id=${data.id})`, true);
+        resultEl.textContent = JSON.stringify(data, null, 2);
+
+        // store id for Playwright to read in the UI flow if needed
+        window.__lastProvisionId = data.id;
+      } catch (e) {
+        setStatus(`Request failed: ${e}`, false);
+      }
+    });
+  </script>
+</body>
+</html>
