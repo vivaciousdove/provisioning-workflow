@@ -55,7 +55,7 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Create MySQL table (schema)
+      - name: Create MySQL schema
         env:
           MYSQL_PWD: root
         run: |
@@ -96,15 +96,18 @@ jobs:
             if curl -fsS http://127.0.0.1:8000/health >/dev/null; then echo "API up"; break; fi
             sleep 1
           done
+          curl -fsS http://127.0.0.1:8000/health
+
           echo "Waiting for Web..."
           for i in {1..60}; do
             if curl -fsS http://127.0.0.1:5173/ >/dev/null; then echo "Web up"; break; fi
             sleep 1
           done
 
-      - name: Run Playwright tests
+      - name: Run Playwright tests (UI + API)
         env:
-          BASE_URL: http://127.0.0.1:5173
+          CI: "true"
+          WEB_BASE_URL: http://127.0.0.1:5173
           API_BASE_URL: http://127.0.0.1:8000
         run: |
           npx playwright test --project=chromium
@@ -118,7 +121,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-      - name: Upload test results (screenshots/videos/traces)
+      - name: Upload Playwright test results (screenshots/videos/traces)
         if: always()
         uses: actions/upload-artifact@v4
         with:

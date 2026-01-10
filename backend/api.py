@@ -1,31 +1,32 @@
+import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-import mysql.connector
 from mysql.connector import Error
 
-# ---- DB CONFIG (keep simple for now; later we move to env vars) ----
-DB_CONFIG = {
-    "host": "127.0.0.1",
-    "port": 3306,
-    "user": "root",
-    "password": "SQLroot123#",
-    "database": "provisioning_lab",
-}
+from backend.db_connect import get_conn
 
 app = FastAPI(title="Provisioning API", version="1.0")
 
+
 # ---- CORS (required for browser / Playwright UI running on :5173) ----
+# Allow local dev + CI flexibility.
+extra_origins = os.getenv("CORS_ORIGINS", "")
+allow_origins = [
+    "http://127.0.0.1:5173",
+    "http://localhost:5173",
+]
+if extra_origins.strip():
+    allow_origins.extend([o.strip() for o in extra_origins.split(",") if o.strip()])
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://127.0.0.1:5173",
-        "http://localhost:5173",
-    ],
+    allow_origins=allow_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # ---- Request/Response Models ----
 class ProvisionCreate(BaseModel):
@@ -33,6 +34,7 @@ class ProvisionCreate(BaseModel):
     service_type: str = Field(..., max_length=32)
     plan_code: str = Field(..., max_length=32)
     imei: str = Field(..., max_length=20)
+
 
 class ProvisionOut(BaseModel):
     id: int
@@ -42,10 +44,6 @@ class ProvisionOut(BaseModel):
     imei: str
     status: str
     created_at: str
-
-
-def get_conn():
-    return mysql.connector.connect(**DB_CONFIG)
 
 
 @app.get("/health")
