@@ -1,4 +1,4 @@
-name: CI - Provisioning Workflow (Playwright + FastAPI + MySQL)
+name: CI - Provisioning Workflow (Playwright + FastAPI + MySQL + Allure)
 
 on:
   push:
@@ -55,7 +55,7 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Create MySQL schema
+      - name: Create MySQL schema/table
         env:
           MYSQL_PWD: root
         run: |
@@ -81,7 +81,7 @@ jobs:
           DB_PASSWORD: root
           DB_NAME: provisioning_lab
         run: |
-          nohup python -m uvicorn api:app --host 127.0.0.1 --port 8000 --log-level info > api.log 2>&1 &
+          nohup python -m uvicorn backend.api:app --host 127.0.0.1 --port 8000 --log-level info > api.log 2>&1 &
           echo "Started API"
 
       - name: Start Web server (background)
@@ -96,7 +96,6 @@ jobs:
             if curl -fsS http://127.0.0.1:8000/health >/dev/null; then echo "API up"; break; fi
             sleep 1
           done
-          curl -fsS http://127.0.0.1:8000/health
 
           echo "Waiting for Web..."
           for i in {1..60}; do
@@ -104,13 +103,19 @@ jobs:
             sleep 1
           done
 
-      - name: Run Playwright tests (UI + API)
+      - name: Run Playwright tests
         env:
-          CI: "true"
           WEB_BASE_URL: http://127.0.0.1:5173
           API_BASE_URL: http://127.0.0.1:8000
+          CI: "true"
         run: |
           npx playwright test --project=chromium
+
+      - name: Build Allure HTML report (from allure-results)
+        if: always()
+        run: |
+          npx allure-commandline generate allure-results --clean -o allure-report
+        continue-on-error: true
 
       - name: Upload Playwright HTML report
         if: always()
@@ -130,12 +135,21 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-      - name: Upload Allure results
+      - name: Upload Allure results (raw)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: allure-results
           path: allure-results
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload Allure HTML report (built)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report
+          path: allure-report
           if-no-files-found: warn
           retention-days: 14
 
