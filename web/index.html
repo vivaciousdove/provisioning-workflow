@@ -22,12 +22,24 @@
   <div class="card">
     <div class="row">
       <label for="customer_id">customer_id</label>
-      <input id="customer_id" name="customer_id" maxlength="32" required value="CUST_UI_001" />
+      <input
+        id="customer_id"
+        name="customer_id"
+        data-testid="customer_id"
+        maxlength="32"
+        required
+        value="CUST_UI_001"
+      />
     </div>
 
     <div class="row">
       <label for="service_type">service_type</label>
-      <select id="service_type" name="service_type" required>
+      <select
+        id="service_type"
+        name="service_type"
+        data-testid="service_type"
+        required
+      >
         <option value="WIRELESS" selected>WIRELESS</option>
         <option value="FIBER">FIBER</option>
         <option value="IOT">IOT</option>
@@ -36,20 +48,36 @@
 
     <div class="row">
       <label for="plan_code">plan_code</label>
-      <input id="plan_code" name="plan_code" maxlength="32" required value="PLAN_BASIC" />
+      <input
+        id="plan_code"
+        name="plan_code"
+        data-testid="plan_code"
+        maxlength="32"
+        required
+        value="PLAN_BASIC"
+      />
     </div>
 
     <div class="row">
       <label for="imei">imei</label>
-      <input id="imei" name="imei" maxlength="20" required value="356938035643810" />
+      <input
+        id="imei"
+        name="imei"
+        data-testid="imei"
+        maxlength="20"
+        required
+        value="356938035643810"
+      />
     </div>
 
     <div class="row" style="grid-template-columns: 1fr;">
-      <button id="submitBtn" type="button">Submit Provision Request</button>
+      <button id="submitBtn" data-testid="submitBtn" type="button">
+        Submit Provision Request
+      </button>
     </div>
 
-    <p id="status" aria-live="polite"></p>
-    <pre id="result" style="white-space: pre-wrap;"></pre>
+    <p id="status" data-testid="status" aria-live="polite"></p>
+    <pre id="result" data-testid="result" style="white-space: pre-wrap;"></pre>
   </div>
 
   <script>
@@ -94,8 +122,6 @@
 
         setStatus(`Accepted: ${res.status} (created id=${data.id})`, true);
         resultEl.textContent = JSON.stringify(data, null, 2);
-
-        // store id for Playwright to read in the UI flow if needed
         window.__lastProvisionId = data.id;
       } catch (e) {
         setStatus(`Request failed: ${e}`, false);

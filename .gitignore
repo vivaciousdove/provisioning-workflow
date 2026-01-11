@@ -1,17 +1,21 @@
 # Python
-.venv/
 __pycache__/
 *.pyc
+.venv/
+.venv*/
 .pytest_cache/
-
-# Playwright
-playwright-report/
-test-results/
-allure-results/
 
 # Node
 node_modules/
 
-# OS
+# Playwright
+playwright-report/
+test-results/
+
+# Allure
+allure-results/
+allure-report/
+
+# OS / editor
 .DS_Store
-Thumbs.db
+.vscode/

@@ -2,16 +2,16 @@
   "name": "provisioning-workflow",
   "private": true,
   "devDependencies": {
-    "@playwright/test": "^1.57.0",
+    "@playwright/test": "^1.50.0",
     "allure-commandline": "^2.36.0",
-    "allure-playwright": "^3.4.4"
+    "allure-playwright": "^3.0.0-beta.21"
   },
   "scripts": {
-    "api": "python -m uvicorn api:app --host 127.0.0.1 --port 8000",
-    "web": "python -m http.server 5173 --directory web",
-    "test": "npx playwright test",
-    "report:pw": "npx playwright show-report",
-    "report:allure": "allure generate ./allure-results -o ./allure-report --clean && allure open ./allure-report",
-    "clean:artifacts": "powershell -Command \"Remove-Item -Recurse -Force test-results,playwright-report,allure-report,allure-results -ErrorAction SilentlyContinue\""
+    "test": "playwright test",
+    "test:ui": "playwright test --project=ui",
+    "test:api": "playwright test --project=api",
+    "report": "playwright show-report",
+    "allure:generate": "allure generate allure-results -o allure-report --clean",
+    "allure:open": "allure open allure-report"
   }
 }
