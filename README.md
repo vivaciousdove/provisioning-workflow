@@ -1,3 +1,6 @@
+[![CI](https://github.com/vivaciousdove/provisioning-workflow/actions/workflows/ci.yml/badge.svg)](https://github.com/vivaciousdove/provisioning-workflow/actions/workflows/ci.yml)
+[![Allure Pages](https://github.com/vivaciousdove/provisioning-workflow/actions/workflows/allure-pages.yml/badge.svg)](https://github.com/vivaciousdove/provisioning-workflow/actions/workflows/allure-pages.yml)
+
 # Provisioning Workflow — End-to-End QA Automation System
 
 This project demonstrates modern Software Quality Engineering and SDET practices across a full system stack.
@@ -88,11 +91,81 @@ This creates a **release confidence gate** for every change.
 
 ---
 
-# 🚀 Running Locally
+# 🚀 Running the Full Stack Locally
 
-### Backend
+This project runs **frontend + backend + database + end-to-end tests together**.
+
+---
+
+## Prerequisites
+
+Install before starting:
+
+- Python 3.10+
+- Node.js 18+
+- MySQL 8+
+- Git
+
+---
+
+## 1️⃣ Start MySQL Database
+
+Open MySQL and create the database:
+
+```sql
+CREATE DATABASE provisioning_lab;
+```
+| Setting  | Value            |
+| -------- | ---------------- |
+| Host     | localhost        |
+| Port     | 3306             |
+| User     | root             |
+| Password | root             |
+| Database | provisioning_lab |
+
+## 2️⃣ Start Backend API (FastAPI)
 ```bash
 pip install -r requirements.txt
-uvicorn backend.main:app
+uvicorn backend.api:app --reload
+```
+## 3️⃣ Start Frontend Web App
+```bash
+cd web
+npm install
+npm run dev
 
+Open UI:
+http://localhost:5173
+```
+## 4️⃣ Install Playwright Browsers
+```bash
+npm install
+npx playwright install
+```
+## 5️⃣ Run End-to-End Tests
+```bash
+npx playwright test
+```
+Artifacts generated:
+```powershell
+playwright-report/
+test-results/
+allure-results/
+```
+## 6️⃣ View Reports Locally
+Playwright HTML Report
+```
+npx playwright show-report
+```
+Allure Report
+```
+npx allure serve allure-results
+```
+
+| Service           | URL                                                      |
+| ----------------- | -------------------------------------------------------- |
+| FastAPI Swagger   | [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) |
+| Frontend UI       | [http://localhost:5173](http://localhost:5173)           |
+| Playwright Report | Generated locally                                        |
+| Allure Report     | Generated locally                                        |
 
