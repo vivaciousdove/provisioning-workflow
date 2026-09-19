@@ -101,12 +101,31 @@ jobs:
         run: |
           echo "Waiting for API..."
           for i in {1..60}; do
-            if curl -fsS http://127.0.0.1:8000/health >/dev/null; then echo "API up"; break; fi
+            if curl -fsS http://127.0.0.1:8000/health >/dev/null; then
+              echo "API is healthy"
+              break
+            fi
+
+            if [ "$i" -eq 60 ]; then
+              echo "API failed to become healthy within 60 seconds"
+              exit 1
+            fi
+
             sleep 1
           done
+
           echo "Waiting for Web..."
           for i in {1..60}; do
-            if curl -fsS http://127.0.0.1:5173/ >/dev/null; then echo "Web up"; break; fi
+            if curl -fsS http://127.0.0.1:5173/ >/dev/null; then
+              echo "Web server is healthy"
+              break
+            fi
+
+            if [ "$i" -eq 60 ]; then
+              echo "Web server failed to become healthy within 60 seconds"
+              exit 1
+            fi
+
             sleep 1
           done
 

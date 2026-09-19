@@ -1,10 +1,7 @@
 // @ts-check
 import { defineConfig } from "@playwright/test";
-import path from "node:path";
 
-const ROOT = __dirname;
-
-// URLs
+// Application URLs use environment variables in CI and local defaults otherwise.
 const WEB_BASE_URL = process.env.WEB_BASE_URL || "http://127.0.0.1:5173";
 const API_BASE_URL = process.env.API_BASE_URL || "http://127.0.0.1:8000";
 
@@ -28,21 +25,23 @@ export default defineConfig({
     ["allure-playwright", { outputFolder: "allure-results" }],
   ],
 
-  // ✅ IMPORTANT:
-  // Only auto-start servers when NOT in CI
+  // Local runs start the application automatically.
+  // CI starts these services separately in the GitHub Actions workflow.
   webServer: process.env.CI
     ? undefined
     : [
         {
           name: "api",
-          command: "python -m uvicorn backend.api:app --host 127.0.0.1 --port 8000",
+          command:
+            "python -m uvicorn backend.api:app --host 127.0.0.1 --port 8000",
           url: `${API_BASE_URL}/health`,
           reuseExistingServer: true,
           timeout: 60_000,
         },
         {
           name: "web",
-          command: "python -m http.server 5173 --directory web --bind 127.0.0.1",
+          command:
+            "python -m http.server 5173 --directory web --bind 127.0.0.1",
           url: WEB_BASE_URL,
           reuseExistingServer: true,
           timeout: 60_000,
@@ -50,7 +49,20 @@ export default defineConfig({
       ],
 
   projects: [
-    { name: "ui", use: { browserName: "chromium" } },
-    { name: "api" },
+    {
+      name: "ui",
+      testMatch: /.*_ui\.spec\.ts/,
+      use: {
+        browserName: "chromium",
+      },
+    },
+    {
+      name: "api",
+      testMatch: /.*_api\.spec\.ts/,
+    },
+    {
+      name: "db",
+      testMatch: /.*_db\.spec\.ts/,
+    },
   ],
 });
