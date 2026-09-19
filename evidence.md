@@ -1,68 +1,76 @@
-# Flagship Evidence — Provisioning Workflow
+# Test Evidence
 
-This document explains **what this project proves** from a Software Quality Engineering (SQE) / SDET perspective and how it maps to my enterprise and modern SDET experience.
+This project keeps test evidence from GitHub Actions so failures can be investigated beyond a simple pass/fail result.
 
----
+## Automated Coverage
 
-## 🧪 What This Project Proves
+The current Playwright suite includes:
 
-This project demonstrates **end-to-end quality engineering** across a realistic system composed of UI, API, database, and CI components.
+- 3 UI tests
+- 6 API tests
+- 1 database persistence test
 
-### 1. End-to-End Quality Validation
-- UI workflows, backend APIs, and database state are validated together.
-- Tests focus on **system behavior**, not isolated components.
+The database test creates a provisioning request through the API and queries MySQL directly to confirm the expected values were stored.
 
-### 2. Automation That Replaces Manual Risk
-- Automation targets high-risk, repetitive validation previously performed manually.
-- Test execution is optimized for speed and determinism to support frequent runs.
+## CI Evidence
 
-### 3. API & Backend Verification
-- REST API requests and responses are validated for:
-  - payload accuracy
-  - business rules
-  - failure and error handling
-- API behavior is validated independently and as part of end-to-end flows.
+Each GitHub Actions run can produce the following artifacts.
 
-### 4. Data Integrity Validation
-- Database state is validated using SQL after API-driven transactions.
-- Tests verify calculations, record creation, and updates that the UI alone cannot confirm.
+### Playwright HTML Report
 
-### 5. CI-Integrated Quality Gates
-- Automated tests execute in GitHub-driven CI workflows.
-- Failures surface early and act as quality signals before changes progress further.
+`playwright-html-report`
 
-### 6. Negative & Failure-Path Testing
-- Invalid inputs and edge cases are explicitly tested.
-- Error handling is validated to prevent silent or downstream failures.
+Provides the test execution summary and failure details.
 
----
+### Playwright Test Results
 
-## 🔗 Experience Mapping
+`playwright-test-results`
 
-### Enterprise Quality Engineering (T-Mobile)
-This project serves as a **modern technical proof point** for quality engineering work performed in large-scale enterprise environments, including:
-- Automation replacing manual validation
-- API and backend integration testing
-- Data integrity checks using SQL
-- CI-embedded quality workflows
-- Defect prevention and release confidence
+Can contain screenshots, videos, and traces captured according to the Playwright configuration.
 
-### Modern SDET Execution (Diversociete)
-This project demonstrates hands-on execution using:
-- Playwright for UI automation
-- Python-based API validation
-- MySQL data verification
-- GitHub Actions for CI
-- Evidence-first reporting (logs, screenshots, reports)
+These are useful when investigating UI failures.
 
----
+### Allure Results
 
-## 🧠 Why This Matters
+`allure-results`
 
-While environments and tools vary, **quality engineering principles remain consistent**:
-- Reduce risk early
-- Validate what matters most
-- Prove behavior with evidence
-- Support confident releases
+Contains the raw results used to generate the Allure report.
 
-This project demonstrates those principles using a modern web and API stack.
+### Allure HTML Report
+
+`allure-html-report`
+
+Provides another view of the automated test results and is published through GitHub Pages for runs on `main`.
+
+### Server Logs
+
+`server-logs`
+
+Contains:
+
+- `api.log`
+- `web.log`
+
+These logs help distinguish application or environment failures from test failures.
+
+## Failure Evidence
+
+The CI workflow uploads reports and logs with `if: always()`, so evidence is still collected when a test fails.
+
+This helps answer a basic QA troubleshooting question:
+
+**Did the application fail, did the environment fail, or did the test fail?**
+
+## CI Environment
+
+The workflow:
+
+1. Starts a MySQL 8 service container
+2. Creates the provisioning database schema
+3. Starts FastAPI and the web server
+4. Confirms both services are healthy
+5. Runs the Playwright UI, API, and database tests
+6. Generates reports
+7. Uploads the available test evidence
+
+The test run is associated with the GitHub commit that triggered the workflow, making it possible to connect the results back to a specific code change.
